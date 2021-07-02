@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 const ErrorHandler = require('./helpers/ErrorHandler');
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cookieParser());
 if(process.env.NODE_ENV=='dev')
     app.use(morgan('dev'));
+app.use(cors());
 
 app.use('/api/v1/admin',adminRouter);
 app.use('/api/v1/products',productRouter);
