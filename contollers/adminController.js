@@ -8,9 +8,9 @@ exports.signIn = cw(async function(req,res,next){
     if(req.body.email&&req.body.password){
         const admin = await Admin.findOne({email:req.body.email}).select('+password');
             if (admin && await admin.verifyPassword(req.body.password)){
-                const token = await jwt.sign(user.id,process.env.JWT_SECRET);
-                if(user.password)
-                    delete user.password;
+                const token = await jwt.sign(admin.id,process.env.JWT_SECRET);
+                if(admin.password)
+                    delete admin.password;
                 res.cookie('jwt',token,{maxAge:(60000*24*90)}).status(200).json({
                     admin:admin
                 })
