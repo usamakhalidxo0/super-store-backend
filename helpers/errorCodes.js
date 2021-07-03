@@ -1,4 +1,4 @@
-const errorClasses = {
+const errorCodes = {
     MissingFields:0,
     InvalidCredentials:1,
     MissingJWT:2,
@@ -7,4 +7,4 @@ const errorClasses = {
 
 }
 
-module.exports = errorClasses;
+module.exports = errorCodes;

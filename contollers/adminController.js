@@ -2,15 +2,17 @@ const Admin = require('../models/Admin');
 const EE = require('../helpers/EnhancedError');
 const jwt = require('jsonwebtoken');
 const cw = require('../helpers/controlerWrapper');
-const ec = require('../helpers/errorClasses');
+const ec = require('../helpers/errorCodes');
 
 exports.signIn = cw(async function(req,res,next){
     if(req.body.email&&req.body.password){
-        const user = await Admin.findOne({email:req.body.email}).select('+password');
-            if (user && await user.verifyPassword(req.body.password)){
+        const admin = await Admin.findOne({email:req.body.email}).select('+password');
+            if (admin && await admin.verifyPassword(req.body.password)){
                 const token = await jwt.sign(user.id,process.env.JWT_SECRET);
+                if(user.password)
+                    delete user.password;
                 res.cookie('jwt',token,{maxAge:(60000*24*90)}).status(200).json({
-                    email:user.email
+                    admin:admin
                 })
             }
             else next(new EE('Invalid Credentials!',404,ec.InvalidCredentials));
@@ -31,10 +33,15 @@ exports.authenticate = cw(async function(req,res,next){
 })
 
 exports.changeEmail = cw(async function(req,res,next){
+    try{
     const admin = await Admin.findById(req.id);
     admin.email= req.body.email;
     admin.save();
     res.json({admin:admin});
+    }
+    catch(err){
+        next(err)
+    }
 })
 
 exports.changePassword = cw(async function (req,res,next){
@@ -46,7 +53,9 @@ exports.changePassword = cw(async function (req,res,next){
                     admin.password = req.body.newPassword;
                     admin.save();
                 }
-                finally{}
+                catch(err){
+                    next(err);
+                }
             }
             else next(new EE('New passwords donot match', 400, ec.UnmatchedPasswords))
         }
