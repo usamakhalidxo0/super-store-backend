@@ -10,7 +10,7 @@ const adminRouter = require('./routes/adminRouter');
 
 const app = express()
 
-app.use(express.json());
+// app.use(express.json());
 app.use(cookieParser());
 if(!process.env.NODE_ENV)
     app.use(morgan('dev'));
