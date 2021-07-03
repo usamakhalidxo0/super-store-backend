@@ -8,7 +8,7 @@ exports.signIn = cw(async function(req,res,next){
     if(req.body.email&&req.body.password){
         const user = await Admin.findOne({email:req.body.email}).select('+password');
             if (user && await user.verifyPassword(req.body.password)){
-                const token = await jwt.sign(user.id,process.env.JWT_SecRET);
+                const token = await jwt.sign(user.id,process.env.JWT_SECRET);
                 res.cookie('jwt',token,{maxAge:(60000*24*90)}).status(200).json({
                     email:user.email
                 })
