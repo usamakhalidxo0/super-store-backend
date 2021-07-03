@@ -20,7 +20,7 @@ exports.signIn = cw(async function(req,res,next){
 
 exports.authenticate = cw(async function(req,res,next){
     if(req.cookies.jwt){
-        const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SecRET);
+        const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SECRET);
         if(id){
             req.id=id;
             next()
