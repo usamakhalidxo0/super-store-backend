@@ -4,41 +4,56 @@ const jwt = require('jsonwebtoken');
 const cw = require('../helpers/controlerWrapper');
 const ec = require('../helpers/errorCodes');
 
+
 exports.signIn = cw(async function(req,res,next){
-    if(req.body.email&&req.body.password){
-        const user = await Admin.findOne({email:req.body.email}).select('+password');
-            if (user && await user.verifyPassword(req.body.password)){
-                const token = await jwt.sign(user.id,process.env.JWT_SECRET);
-                user.password=undefined;
-                console.log(user);
-                res.cookie('jwt',token,{maxAge:(60000*24*90), httpOnly:true}).status(200).json({
-                    jwt:token,
-                    data:user
-                })
-            }
-            else next(new EE('Invalid Credentials!',404,ec.InvalidCredentials));
-    }
-    else next(new EE('Please provide email and password',400,ec.MissingFields))
+
+    if(!(req.body.email&&req.body.password))
+        return next(new EE('Please provide "email" and "password"',400,ec.MissingFields));
+
+    const user = await Admin.findOne({email:req.body.email}).select('+password');
+
+    // refactor reminder
+    if (!(user && await user.verifyPassword(req.body.password)))
+        return next(new EE('Invalid Credentials!',404,ec.InvalidCredentials));
+
+    const token = await jwt.sign(user.id,process.env.JWT_SECRET,{expiresIn:process.env.JWT_AGE});
+    user.password=undefined;
+
+    //refactor cookie options
+    res.cookie('jwt',token,{maxAge:(60000*24*90)}).status(200).json({
+        jwt:token,
+        data:user
+    })
 })
 
 exports.authenticate = cw(async function(req,res,next){
-    if(req.cookies.jwt){
-        const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SECRET);
-        const user = await Admin.findById(id);
-        if(user){
-            req.user=user;
-            next()
-        }
-        else next(new EE('Invalid JWT', 400, ec.InvalidJWT))
-    }
-    else next(new EE('Missing JWT',400,ec.MissingJWT))
+
+    if(!req.cookies.jwt)
+        return next(new EE('Missing JWT',400,ec.MissingJWT));
+
+    const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SECRET);
+    const user = await Admin.findById(id);
+
+    if(!user)
+        return next(new EE('Invalid JWT', 400, ec.InvalidJWT));
+
+    req.user = user;
+    next()
 })
 
 exports.changeEmail = cw(async function(req,res,next){
+
+    if(!(req.body.password&&req.body.newEmail))
+        return next(new EE('Please provide "password" and "newEmail"',400, ec.MissingFields));
+
+    if(!req.user.verifyPassword(req.body.password))
+        return next(new EE('Incorrect password', 404, ec.InvalidCredentials));
+
     try{
-    user.email= req.body.email;
-    user.save();
-    res.json({data:user});
+        user=req.user;
+        user.email= req.body.newEmail;
+        user.save();
+        res.status(200).json({data:user});
     }
     catch(err){
         next(err)
@@ -46,22 +61,25 @@ exports.changeEmail = cw(async function(req,res,next){
 })
 
 exports.changePassword = cw(async function (req,res,next){
-    if(req.body.oldPassword && req.body.newPassword && req.body.verifyNewPassword){
-        const user = req.user;
-        if(user.verifyPassword(req.body.oldPassword)){
-            if(req.body.newPassword === req.body.verifyNewPassword){
-                try{
-                    user.password = req.body.newPassword;
-                    user.save();
-                }
-                catch(err){
-                    next(err);
-                }
-            }
-            else next(new EE('New passwords donot match', 400, ec.UnmatchedPasswords))
-        }
-        else next(new EE('oldPassword is not correct',400,ec.InvalidCredentials))
+
+    if(!(req.body.oldPassword && req.body.newPassword && req.body.verifyNewPassword))
+        return next(new EE('Please provide "oldPassword", "newPassword" and "verfiyNewPassword"',400,ec.MissingFields));
+
+    const user = req.user;
+    if(!user.verifyPassword(req.body.oldPassword))
+        return next(new EE('"oldPassword" is not correct',400,ec.InvalidCredentials));
+
+    if(!(req.body.newPassword === req.body.verifyNewPassword))
+        return next(new EE('New passwords donot match', 400, ec.UnmatchedPasswords));
+
+    try{
+        user.password = req.body.newPassword;
+        user.save();
+        res.status(200).json({
+            data:user
+        })
     }
-    else next(new EE('Please provide "oldPassword, newPassword and verfiyNewPassword"',400,ec.MissingFields))
-    const user = await Admin.findById(req.id);
+    catch(err){
+        next(err);
+    }
 })
