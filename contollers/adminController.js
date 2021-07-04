@@ -6,13 +6,14 @@ const ec = require('../helpers/errorCodes');
 
 exports.signIn = cw(async function(req,res,next){
     if(req.body.email&&req.body.password){
-        const admin = await Admin.findOne({email:req.body.email}).select('+password');
-            if (admin && await admin.verifyPassword(req.body.password)){
-                const token = await jwt.sign(admin.id,process.env.JWT_SECRET);
-                if(admin.password)
-                    delete admin.password;
+        const user = await Admin.findOne({email:req.body.email}).select('+password');
+            if (user && await user.verifyPassword(req.body.password)){
+                const token = await jwt.sign(user.id,process.env.JWT_SECRET);
+                user.password=undefined;
+                console.log(user);
                 res.cookie('jwt',token,{maxAge:(60000*24*90), httpOnly:true}).status(200).json({
-                    admin:admin
+                    jwt:token,
+                    data:user
                 })
             }
             else next(new EE('Invalid Credentials!',404,ec.InvalidCredentials));
@@ -23,8 +24,9 @@ exports.signIn = cw(async function(req,res,next){
 exports.authenticate = cw(async function(req,res,next){
     if(req.cookies.jwt){
         const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SECRET);
-        if(id){
-            req.id=id;
+        const user = await Admin.findById(id);
+        if(user){
+            req.user=user;
             next()
         }
         else next(new EE('Invalid JWT', 400, ec.InvalidJWT))
@@ -34,10 +36,9 @@ exports.authenticate = cw(async function(req,res,next){
 
 exports.changeEmail = cw(async function(req,res,next){
     try{
-    const admin = await Admin.findById(req.id);
-    admin.email= req.body.email;
-    admin.save();
-    res.json({admin:admin});
+    user.email= req.body.email;
+    user.save();
+    res.json({data:user});
     }
     catch(err){
         next(err)
@@ -46,12 +47,12 @@ exports.changeEmail = cw(async function(req,res,next){
 
 exports.changePassword = cw(async function (req,res,next){
     if(req.body.oldPassword && req.body.newPassword && req.body.verifyNewPassword){
-        const admin = await Admin.findById(req.id);
-        if(admin.verifyPassword(req.body.oldPassword)){
+        const user = req.user;
+        if(user.verifyPassword(req.body.oldPassword)){
             if(req.body.newPassword === req.body.verifyNewPassword){
                 try{
-                    admin.password = req.body.newPassword;
-                    admin.save();
+                    user.password = req.body.newPassword;
+                    user.save();
                 }
                 catch(err){
                     next(err);
@@ -62,5 +63,5 @@ exports.changePassword = cw(async function (req,res,next){
         else next(new EE('oldPassword is not correct',400,ec.InvalidCredentials))
     }
     else next(new EE('Please provide "oldPassword, newPassword and verfiyNewPassword"',400,ec.MissingFields))
-    const admin = await Admin.findById(req.id);
+    const user = await Admin.findById(req.id);
 })
