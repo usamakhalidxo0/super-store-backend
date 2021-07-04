@@ -11,7 +11,7 @@ exports.signIn = cw(async function(req,res,next){
                 const token = await jwt.sign(admin.id,process.env.JWT_SECRET);
                 if(admin.password)
                     delete admin.password;
-                res.cookie('jwt',token,{maxAge:(60000*24*90)}).status(200).json({
+                res.cookie('jwt',token,{maxAge:(60000*24*90), httpOnly:true}).status(200).json({
                     admin:admin
                 })
             }
