@@ -28,11 +28,16 @@ exports.signIn = cw(async function(req,res,next){
 
 exports.authenticate = cw(async function(req,res,next){
 
-    if(!req.cookies.jwt)
+    if(!(req.cookies.jwt || req.headers.jwt))
         return next(new EE('Missing JWT',400,ec.MissingJWT));
 
-    const id = await jwt.verify(req.cookies.jwt,process.env.JWT_SECRET);
-    const user = await Admin.findById(id);
+    let jwt;
+    if(req.cookies.jwt)
+        jwt=req.cookies.jwt;
+    else jwt=req.headers.jwt;
+
+    const decoded = await jwt.verify(jwt,process.env.JWT_SECRET);
+    req.id = decoded.id;
 
     if(!user)
         return next(new EE('Invalid JWT', 400, ec.InvalidJWT));
@@ -43,14 +48,16 @@ exports.authenticate = cw(async function(req,res,next){
 
 exports.changeEmail = cw(async function(req,res,next){
 
+    user= await Admin.findById(req.id).select('+password');
+
     if(!(req.body.password&&req.body.newEmail))
         return next(new EE('Please provide "password" and "newEmail"',400, ec.MissingFields));
 
-    if(!req.user.verifyPassword(req.body.password))
+    if(!user.verifyPassword(req.body.password))
         return next(new EE('Incorrect password', 404, ec.InvalidCredentials));
+    user.password=undefined;
 
     try{
-        user=req.user;
         user.email= req.body.newEmail;
         user.save();
         res.status(200).json({data:user});
@@ -65,9 +72,10 @@ exports.changePassword = cw(async function (req,res,next){
     if(!(req.body.oldPassword && req.body.newPassword && req.body.verifyNewPassword))
         return next(new EE('Please provide "oldPassword", "newPassword" and "verfiyNewPassword"',400,ec.MissingFields));
 
-    const user = req.user;
+    const user = await Admin.findById(req.id).select('+password');
     if(!user.verifyPassword(req.body.oldPassword))
         return next(new EE('"oldPassword" is not correct',400,ec.InvalidCredentials));
+    user.password=undefined;
 
     if(!(req.body.newPassword === req.body.verifyNewPassword))
         return next(new EE('New passwords donot match', 400, ec.UnmatchedPasswords));

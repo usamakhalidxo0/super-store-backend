@@ -14,10 +14,7 @@ app.use(express.json());
 app.use(cookieParser());
 if(!process.env.NODE_ENV)
     app.use(morgan('dev'));
-app.use(cors({
-    credentials:true,
-    exposedHeaders:["set-cookie"]
-}));
+app.use(cors());
 
 app.use('/api/v1/admin',adminRouter);
 app.use('/api/v1/products',productRouter);
