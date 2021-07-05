@@ -12,6 +12,8 @@ const schema = new mongoose.Schema({
         type:String,
         select:false,
     }
+},{
+    validateBeforeSave:true
 })
 
 schema.pre('save', async function(next){

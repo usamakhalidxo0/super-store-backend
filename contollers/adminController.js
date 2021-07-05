@@ -16,7 +16,7 @@ exports.signIn = cw(async function(req,res,next){
     if (!(user && await user.verifyPassword(req.body.password)))
         return next(new EE('Invalid Credentials!',404,ec.InvalidCredentials));
 
-    const token = await jwt.sign(user.id,process.env.JWT_SECRET,{expiresIn:process.env.JWT_AGE});
+    const token = await jwt.sign({id:user.id},process.env.JWT_SECRET,{expiresIn: process.env.JWT_AGE});
     user.password=undefined;
 
     //refactor cookie options
