@@ -31,10 +31,10 @@ exports.authenticate = cw(async function(req,res,next){
     if(!(req.cookies.jwt || req.headers.jwt))
         return next(new EE('Missing JWT',400,ec.MissingJWT));
 
-    let jwt;
+    let token;
     if(req.cookies.jwt)
-        jwt=req.cookies.jwt;
-    else jwt=req.headers.jwt;
+        token=req.cookies.jwt;
+    else token=req.headers.jwt;
 
     const decoded = await jwt.verify(jwt,process.env.JWT_SECRET);
     req.id = decoded.id;
