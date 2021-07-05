@@ -36,13 +36,13 @@ exports.authenticate = cw(async function(req,res,next){
         token=req.cookies.jwt;
     else token=req.headers.jwt;
 
-    const decoded = await jwt.verify(jwt,process.env.JWT_SECRET);
-    req.id = decoded.id;
+    const decoded = await jwt.verify(token,process.env.JWT_SECRET);
+    const id = decoded.id;
 
-    if(!user)
+    if(!id)
         return next(new EE('Invalid JWT', 400, ec.InvalidJWT));
 
-    req.user = user;
+    req.id = id;
     next()
 })
 
@@ -55,11 +55,11 @@ exports.changeEmail = cw(async function(req,res,next){
 
     if(!user.verifyPassword(req.body.password))
         return next(new EE('Incorrect password', 404, ec.InvalidCredentials));
-    user.password=undefined;
 
     try{
         user.email= req.body.newEmail;
-        user.save();
+        await user.save();
+        user.password=undefined;
         res.status(200).json({data:user});
     }
     catch(err){
@@ -75,14 +75,14 @@ exports.changePassword = cw(async function (req,res,next){
     const user = await Admin.findById(req.id).select('+password');
     if(!user.verifyPassword(req.body.oldPassword))
         return next(new EE('"oldPassword" is not correct',400,ec.InvalidCredentials));
-    user.password=undefined;
 
     if(!(req.body.newPassword === req.body.verifyNewPassword))
         return next(new EE('New passwords donot match', 400, ec.UnmatchedPasswords));
 
     try{
         user.password = req.body.newPassword;
-        user.save();
+        await user.save();
+        user.password=undefined;
         res.status(200).json({
             data:user
         })
