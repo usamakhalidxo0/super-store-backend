@@ -2,12 +2,25 @@ const EE=require('./EnhancedError')
 
 module.exports=function(err,req,res,next){
     console.log(err);
-    if(err instanceof EE){
-        res.status(err.status).json({
-            code:err.code,
-            message:err.message
-        });
+
+    if(!process.env.NODE_ENV){
+        if(err instanceof EE){
+            res.status(err.status).json({
+                code:err.code,
+                message:err.message,
+                errorDump:err
+            });
+        }
+        else res.json(err)
     }
-    else res.status(500).json({message:'Internal Server Error'});
+    else{
+        if(err instanceof EE){
+            res.status(err.status).json({
+                code:err.code,
+                message:err.message
+            });
+        }
+        else res.status(500).json({message:'Internal Server Error'});
+    }
 
 }

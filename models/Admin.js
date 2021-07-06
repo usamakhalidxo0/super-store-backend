@@ -13,7 +13,7 @@ const schema = new mongoose.Schema({
         select:false,
     }
 },{
-    validateBeforeSave:true
+     validateBeforeSave:true
 })
 
 schema.pre('save', async function(next){

@@ -3,7 +3,8 @@ const errorCodes = {
     InvalidCredentials:1,
     MissingJWT:2,
     InvalidJWT:3,
-    UnmatchedPasswords:4
+    UnmatchedPasswords:4,
+    InvalidData:5
 
 }
 

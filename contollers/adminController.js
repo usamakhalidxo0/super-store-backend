@@ -28,13 +28,13 @@ exports.signIn = cw(async function(req,res,next){
 
 exports.authenticate = cw(async function(req,res,next){
 
-    if(!(req.cookies.jwt || req.headers.jwt))
+    if(!(req.cookies.jwt || req.body.jwt))
         return next(new EE('Missing JWT',400,ec.MissingJWT));
 
     let token;
     if(req.cookies.jwt)
         token=req.cookies.jwt;
-    else token=req.headers.jwt;
+    else token=req.body.jwt;
 
     const decoded = await jwt.verify(token,process.env.JWT_SECRET);
     const id = decoded.id;
@@ -63,7 +63,10 @@ exports.changeEmail = cw(async function(req,res,next){
         res.status(200).json({data:user});
     }
     catch(err){
-        next(err)
+        if(err.name==="ValidationError"){
+            next(new EE(err.message,400,ec.InvalidData));
+        }
+        else next(err)
     }
 })
 
